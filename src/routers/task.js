@@ -1,75 +1,77 @@
-const express = require('express')
-const Task = require('../models/task')
-const router = new express.Router()
+const express = require("express");
+const Task = require("../models/task");
+const auth = require("../middleware/auth");
+const router = new express.Router();
 
-router.get('/tasks',async (req,res)=>{
-    try{
-         const tasks = await Task.find({})
-         res.send(tasks)
-    }catch(e){
-         res.status(500).send(e)
+router.post("/tasks", auth, async (req, res) => {
+  try {
+    const task = new Task({
+      ...req.body,
+      owner: req.user._id
+    });
+    await task.save();
+    res.status(201).send(task);
+  } catch (e) {
+    res.status(400).send(e);
+  }
+});
+
+router.get("/tasks", async (req, res) => {
+  try {
+    const tasks = await Task.find({});
+    res.send(tasks);
+  } catch (e) {
+    res.status(500).send(e);
+  }
+});
+
+router.get("/tasks/:id", async (req, res) => {
+  const _id = req.params.id;
+  try {
+    const task = await Task.findById(_id);
+    if (!task) {
+      res.status(404).send();
     }
- })
- 
-router.get('/tasks/:id',async (req,res)=>{
-     const _id = req.params.id
-     try{
-         const task = await Task.findById(_id)
-         if(!task){
-             res.status(404).send()
-         }
-         res.send(task)
-     }catch(e){
-         res.status(404).send(e)
-     }
- })
- 
-router.patch('/task/:id',async(req,res)=>{
-     const updates = Object.keys(req.body)
-     const allowedUpdates = ['description','completed']
-     const isValidOpeartion = updates.every(update=>{
-         return allowedUpdates.includes(update)
-     })
-     if(!isValidOpeartion){
-         return res.status(400).send({error:'Invalid udpates'})
-     }
- 
-     try{
-         const _id = req.params.id
-         const task = await Task.findById(_id)
-         updates.forEach(key=>{
-             task[key] = req.body[key]
-         })   
-         await task.save()
-         if(!task){
-             res.status(404).send()
-         }
-         res.send(task)
-     }catch(e){
-         res.status(400).send(e)
-     }
- })
- router.delete('/tasks/:id',async(req,res)=>{
-     try{
-         const task = await Task.findByIdAndDelete(req.params.id)
-         if(!task){
-             res.status(404).send()
-         } 
-         res.send(task)
-     }catch(e){
-         res.status(500).send()
-     }
- 
- })
- 
- 
-router.post('/tasks', async (req,res)=>{
-     try{
-         const task = new Task(req.body)
-         await task.save()
-         res.send(201)
-     }catch(e){
-         res.status(400).send(e)
-     }
-})
-module.exports = router
+    res.send(task);
+  } catch (e) {
+    res.status(404).send(e);
+  }
+});
+
+router.patch("/task/:id", async (req, res) => {
+  const updates = Object.keys(req.body);
+  const allowedUpdates = ["description", "completed"];
+  const isValidOpeartion = updates.every(update => {
+    return allowedUpdates.includes(update);
+  });
+  if (!isValidOpeartion) {
+    return res.status(400).send({ error: "Invalid udpates" });
+  }
+
+  try {
+    const _id = req.params.id;
+    const task = await Task.findById(_id);
+    updates.forEach(key => {
+      task[key] = req.body[key];
+    });
+    await task.save();
+    if (!task) {
+      res.status(404).send();
+    }
+    res.send(task);
+  } catch (e) {
+    res.status(400).send(e);
+  }
+});
+router.delete("/tasks/:id", async (req, res) => {
+  try {
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) {
+      res.status(404).send();
+    }
+    res.send(task);
+  } catch (e) {
+    res.status(500).send();
+  }
+});
+module.exports = router;
